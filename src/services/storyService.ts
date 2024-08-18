@@ -1,41 +1,33 @@
 import { generateStoryText } from "./openaiService";
 
-// Initial story prompt
-export const startStoryPrompt = `
-  Begin an engaging and immersive story. Identify the most dominant mood of the generated text from the following list: Calm, Tense, Joyful, Mysterious, Sad, Excited. 
-  The story should be dynamic, with choices that have clear consequences, leading to either positive or negative outcomes based on the user's decisions. 
-  Respond in the following format: '<Mood>. <Story continuation...>' End the story segment with a prompt for the user to make an open-ended choice.`;
 
-
-
-// Create a decision prompt based on user input and segment count
-export const createDecisionPrompt = (userInput: string, segmentCount: number) => {
-    console.log(segmentCount);
-    if (segmentCount >= 2) {
-        // Climax prompt for the final segment
+export const generateStoryPrompt = (userInput: string, segmentCount: number) => {
+    if (segmentCount === 0) {
         return `
-          This is the climax of the story. The character has made numerous choices, each with its consequences. Based on the previous decisions, generate a climactic segment that ties together the themes and decisions, leading to a significant and impactful conclusion. 
-          ${userInput}.
-          Identify the most dominant mood from the following list: Calm, Tense, Joyful, Mysterious, Sad, Excited. 
-          Respond in the following format: '<Mood>. <Climactic story continuation...>'`;
+            Begin an engaging and immersive story. Identify the most dominant mood of the generated text from the following list: Calm, Tense, Joyful, Mysterious, Sad, Excited.
+            As the story unfolds, provide three distinct options for the next steps, each with a different consequence. Each option should be implied through the narrative and no longer than one sentence.
+            Respond in the following format:
+            '<Mood>. <Story continuation...> 1. <Option 1>. 2. <Option 2>. 3. <Option 3>.'
+            Lead the story to a clear decision point with these options.`;
+    } else if (segmentCount >= 2) {
+        return `
+            This is the climax of the story. The character has made numerous choices, each with its consequences. Based on the previous decisions and the accumulated karma score, generate a climactic segment that ties together the themes and decisions, leading to a conclusion directly influenced by the story's karma.
+            The karma level should determine the positivity of the outcome, where a higher karma leads to a more positive ending.
+            ${userInput}.
+            Identify the most dominant mood from the following list: Calm, Tense, Joyful, Mysterious, Sad, Excited. 
+            Respond in the following format: '<Mood>. <Climactic story continuation...>'`;
     } else {
-        // Regular prompt with consequences
         return `
-          Continue the story based on the following input: "${userInput}". 
-          Create a situation where the character's previous choices lead to clear consequences, either positive or negative, depending on the nature of the decision. The story should build tension and anticipation as it moves toward the climax.
-          Identify the most dominant mood from the following list: Calm, Tense, Joyful, Mysterious, Sad, Excited. 
-          Respond in the following format: '<Mood>. <Story continuation...>' Lead the story to a clear decision point with two or more options.`;
+            Continue the story based on the following input: "${userInput}". 
+            Identify the most dominant mood of the generated text from the following list: Calm, Tense, Joyful, Mysterious, Sad, Excited.
+            As the story unfolds, provide three distinct options for the next steps, each with a different consequence. Each option should be implied through the narrative and no longer than one sentence.
+            Respond in the following format:
+            '<Mood>. <Story continuation...> 1. <Option 1>. 2. <Option 2>. 3. <Option 3>.'
+            Lead the story to a clear decision point with these options.`;
     }
 };
 
-// Function to start the story
-export const startStory = async () => {
-    return await generateStoryText(startStoryPrompt);
-};
-
-// Function to continue the story based on user input and segment count
-export const continueStoryWithDecision = async (userInput: string, segmentCount: number) => {
-    console.log(segmentCount);
-    const prompt = createDecisionPrompt(userInput, segmentCount);
+export const generateStory = async (userInput: string, segmentCount: number) => {
+    const prompt = generateStoryPrompt(userInput, segmentCount);
     return await generateStoryText(prompt);
 };

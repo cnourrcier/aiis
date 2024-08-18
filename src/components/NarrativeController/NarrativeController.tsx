@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { startStory, continueStoryWithDecision } from '../../services/storyService';
-import { playMusic } from '../../services/musicService';
-import { setStoryText, resetStory } from '../../store/storySlice';
-import { setUserInput, addUserChoice } from '../../store/userSlice';
+import { generateStory } from '../../services/storyService';
+// import { playMusic } from '../../services/musicService';
+import { setStoryText, resetStory, adjustKarma } from '../../store/storySlice';
+import { setUserInput } from '../../store/userSlice';
 import { setLoading } from '../../store/loadingSlice';
 import { setError, clearError } from '../../store/errorSlice';
 
@@ -13,38 +13,48 @@ const NarrativeController: React.FC = () => {
     const userInput = useSelector((state: RootState) => state.user.userInput);
     const isLoading = useSelector((state: RootState) => state.loading.isLoading);
     const segmentCount = useSelector((state: RootState) => state.story.segmentCount);
+    const [options, setOptions] = useState<string[]>([]);
     const [hasStoryStarted, setHasStoryStarted] = useState(false);
 
     const handleStartStory = async () => {
-        dispatch(setLoading(true));
-        try {
-            const { mood, story } = await startStory();
-            dispatch(setStoryText({ story, mood }));
-            playMusic(mood);
-            setHasStoryStarted(true);
-        } catch (error) {
-            console.error(error);
-            dispatch(setError("Failed to start the story."));
-        } finally {
-            dispatch(setLoading(false));
-        }
+        handleUserInput();
+        setHasStoryStarted(true);
     };
 
     const handleUserInput = async () => {
         dispatch(setLoading(true));
         try {
-            console.log(segmentCount);
-            const { mood, story } = await continueStoryWithDecision(userInput, segmentCount);
+            const { mood, story } = await generateStory(userInput, segmentCount);
+
+            // Extract options from the story
+            const options = story.match(/\d\.\s[^\d]+/g)?.map(option => option.trim()) || [];
+
+            setOptions(options);
+            console.log('Options set:', options)
+
             dispatch(setStoryText({ story, mood }));
-            dispatch(addUserChoice(userInput));  // Save user choice
             // playMusic(mood);
         } catch (error) {
             dispatch(setError("Failed to continue the story."));
         } finally {
             dispatch(setLoading(false));
             dispatch(clearError());
+
+            if (segmentCount >= 2) {
+                console.log('Story reached its climax.');
+            }
         }
     };
+
+    const handleOptionSelection = async (optionIndex: number) => {
+        if (optionIndex === 0) {
+            dispatch(adjustKarma(-1)); // Negative karma
+        } else if (optionIndex === 2) {
+            dispatch(adjustKarma(1)); // Positive karma
+        }
+        dispatch(setUserInput(options[optionIndex]));
+        await handleUserInput(); // Continue the story after selection
+    }
 
     const handleResetStory = () => {
         dispatch(resetStory());
@@ -58,14 +68,21 @@ const NarrativeController: React.FC = () => {
                     {isLoading ? 'Starting...' : 'Start Story'}
                 </button>
             )}
-            {hasStoryStarted && (
+            {hasStoryStarted && options.length > 0 && (
                 <>
-                    <textarea
-                        value={userInput}
-                        onChange={(e) => dispatch(setUserInput(e.target.value))}
-                        placeholder="Your choice..."
-                        disabled={segmentCount >= 2}
-                    />
+                    <div>
+                        {
+                            options.map((option, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleOptionSelection(index)}
+                                    disabled={isLoading}
+                                >
+                                    {option}
+                                </button>
+                            ))
+                        }
+                    </div>
                     <button onClick={handleUserInput} disabled={isLoading}>
                         {isLoading ? 'Generating...' : 'Submit'}
                     </button>
