@@ -8,8 +8,8 @@ const App: React.FC = () => {
     <div>
       <h1>Interactive StoryTelling</h1>
       <ErrorDisplay />
-      <NarrativeController />
       <StoryDisplay />
+      <NarrativeController />
     </div>
   )
 }

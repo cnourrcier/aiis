@@ -1,4 +1,11 @@
-export const generateStoryText = async (prompt: string): Promise<{ mood: string; story: string }> => {
+export interface StoryResponse {
+    mood: string;
+    characters: string[];
+    story: string;
+    options: string[];
+}
+
+export const generateStoryText = async (prompt: string): Promise<StoryResponse> => {
     try {
         const response = await fetch('http://localhost:3000/generate-story', {
             method: 'POST',
@@ -14,19 +21,15 @@ export const generateStoryText = async (prompt: string): Promise<{ mood: string;
             throw new Error('Failed to generate story text.');
         }
 
-        const data = await response.json();
-        console.log(data);
-        // Safely split the story string to extract mood and story
-        const [mood, ...storyParts] = data.story.split(/\.\s+/);
+        const data: StoryResponse = await response.json();
+        console.log('data object:', data);
 
         // Ensure mood and story are correctly extracted
-        if (!mood || storyParts.length === 0) {
+        if (!data.mood || !data.story || data.options.length === 0) {
             throw new Error('Unexpected response format from backend');
         }
 
-        const story = storyParts.join('. ').trim();
-
-        return { mood, story };
+        return data;
     } catch (error) {
         console.error('Error fetching story from backend:', error);
         throw error;

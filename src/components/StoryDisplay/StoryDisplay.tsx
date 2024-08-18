@@ -4,7 +4,7 @@ import { RootState } from '../../store';
 
 const StoryDisplay: React.FC = () => {
     const story = useSelector((state: RootState) => state.story.story);
-
+    console.log('story:', story);
     return (
         <div>
             <p>{story}</p>

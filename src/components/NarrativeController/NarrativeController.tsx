@@ -7,6 +7,7 @@ import { setStoryText, resetStory, adjustKarma } from '../../store/storySlice';
 import { setUserInput } from '../../store/userSlice';
 import { setLoading } from '../../store/loadingSlice';
 import { setError, clearError } from '../../store/errorSlice';
+import StoryDisplay from '../StoryDisplay/StoryDisplay';
 
 const NarrativeController: React.FC = () => {
     const dispatch = useDispatch();
@@ -15,6 +16,9 @@ const NarrativeController: React.FC = () => {
     const segmentCount = useSelector((state: RootState) => state.story.segmentCount);
     const [options, setOptions] = useState<string[]>([]);
     const [hasStoryStarted, setHasStoryStarted] = useState(false);
+    const [characters, setCharacters] = useState<string[]>([]);
+    const [previousStory, setPreviousStory] = useState<string>('');
+
 
     const handleStartStory = async () => {
         handleUserInput();
@@ -24,15 +28,17 @@ const NarrativeController: React.FC = () => {
     const handleUserInput = async () => {
         dispatch(setLoading(true));
         try {
-            const { mood, story } = await generateStory(userInput, segmentCount);
+            const { mood, characters: newCharacters, story, options: newOptions } = await generateStory(segmentCount, characters, previousStory);
 
-            // Extract options from the story
-            const options = story.match(/\d\.\s[^\d]+/g)?.map(option => option.trim()) || [];
-
-            setOptions(options);
+            setOptions(newOptions || []);
             console.log('Options set:', options)
-
-            dispatch(setStoryText({ story, mood }));
+            console.log('story:', story)
+            const updatedStory = segmentCount > 0 ? `${previousStory} ${userInput} ${story}` : story;
+            setPreviousStory(updatedStory);
+            setCharacters(characters);
+            console.log('updatedStory:', updatedStory);
+            console.log('characters:', characters);
+            dispatch(setStoryText({ story: updatedStory, mood, characters, options }));
             // playMusic(mood);
         } catch (error) {
             dispatch(setError("Failed to continue the story."));
@@ -40,8 +46,8 @@ const NarrativeController: React.FC = () => {
             dispatch(setLoading(false));
             dispatch(clearError());
 
-            if (segmentCount >= 2) {
-                console.log('Story reached its climax.');
+            if (segmentCount >= 5) {
+                console.log('Story reached its resolution.');
             }
         }
     };
@@ -59,6 +65,8 @@ const NarrativeController: React.FC = () => {
     const handleResetStory = () => {
         dispatch(resetStory());
         setHasStoryStarted(false);
+        setPreviousStory('');
+        setCharacters([]);
     }
 
     return (
